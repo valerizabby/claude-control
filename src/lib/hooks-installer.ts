@@ -1,7 +1,7 @@
 import { constants } from "fs";
-import { access, chmod, mkdir, readFile, writeFile } from "fs/promises";
+import { access, chmod, mkdir, readFile, realpath, rename, stat, writeFile } from "fs/promises";
 import { homedir } from "os";
-import { join } from "path";
+import { dirname, join } from "path";
 
 const CLAUDE_SETTINGS_PATH = join(homedir(), ".claude", "settings.json");
 const HOOKS_DIR = join(homedir(), ".claude-control", "hooks");
@@ -59,12 +59,22 @@ export async function ensureHooksInstalled(): Promise<boolean> {
     await chmod(HOOK_SCRIPT_PATH, 0o755);
 
     // Read existing settings
-    let settings: Record<string, unknown> = {};
+    let raw: string | null = null;
     try {
-      const raw = await readFile(CLAUDE_SETTINGS_PATH, "utf-8");
-      settings = JSON.parse(raw);
+      raw = await readFile(CLAUDE_SETTINGS_PATH, "utf-8");
     } catch {
-      // No settings file or invalid JSON — start fresh
+      // No settings file — start fresh
+    }
+    let settings: Record<string, unknown> = {};
+    if (raw !== null) {
+      try {
+        settings = JSON.parse(raw);
+      } catch (error) {
+        // Never overwrite a file we can't parse — that would wipe the user's settings
+        console.warn("claude-control: ~/.claude/settings.json is not valid JSON, hooks not installed:", error);
+        installed = false;
+        return false;
+      }
     }
 
     const hooks = (settings.hooks ?? {}) as Record<string, unknown[]>;
@@ -106,7 +116,14 @@ export async function ensureHooksInstalled(): Promise<boolean> {
       }
 
       settings.hooks = hooks;
-      await writeFile(CLAUDE_SETTINGS_PATH, JSON.stringify(settings, null, 2) + "\n", "utf-8");
+      if (raw !== null) await writeFile(`${CLAUDE_SETTINGS_PATH}.bak`, raw, "utf-8");
+      // Atomic write: temp file next to the real target, then rename. Resolve symlinks first
+      // (dotfiles setups) so rename replaces the target, not the link; keep the file's mode.
+      const target = await realpath(CLAUDE_SETTINGS_PATH);
+      const { mode } = await stat(target);
+      const tmp = join(dirname(target), `.settings.json.${process.pid}.tmp`);
+      await writeFile(tmp, JSON.stringify(settings, null, 2) + "\n", { encoding: "utf-8", mode });
+      await rename(tmp, target);
     }
 
     installed = true;
