@@ -28,6 +28,7 @@ import {
   detectTmuxClients,
   evictStaleTerminalCache,
   findClaudePidsFromTree,
+  findTerminalInTree,
   getTtysForPids,
   isOrphaned,
 } from "./terminal/detect";
@@ -62,6 +63,7 @@ async function findLatestJsonl(projectDir: string, excludePaths?: Set<string>): 
 let lastOrphanCheck = 0;
 let orphanedPids = new Set<number>();
 let pidTmuxSession = new Map<number, string>();
+let pidTerminalApp = new Map<number, NonNullable<ClaudeSession["terminalApp"]>>();
 
 async function buildSession(
   info: ProcessInfo,
@@ -69,6 +71,7 @@ async function buildSession(
   claimedPaths: Set<string>,
   orphaned: boolean,
   tmuxSession: string | null,
+  terminalApp: ClaudeSession["terminalApp"],
 ): Promise<ClaudeSession | null> {
   if (!info.workingDirectory) return null;
 
@@ -161,6 +164,7 @@ async function buildSession(
     prUrl,
     orphaned: recentActivity ? false : orphaned,
     tmuxSession,
+    terminalApp,
   };
 }
 
@@ -192,6 +196,7 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
     const attachedTmuxSessions = new Set(tmuxClients.map((c) => c.sessionName));
     const newOrphaned = new Set<number>();
     const newPidTmuxSession = new Map<number, string>();
+    const newPidTerminalApp = new Map<number, NonNullable<ClaudeSession["terminalApp"]>>();
     for (const pid of pids) {
       const tty = ttyMap.get(pid);
       const paneInfo = tty ? tmuxPanes.get(tty) : undefined;
@@ -203,9 +208,16 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
       if (paneInfo) {
         newPidTmuxSession.set(pid, paneInfo.sessionName);
       }
+      // In tmux the GUI app hosts the tmux client, not claude — walk up from the client instead
+      const hostPid = paneInfo ? (tmuxClients.find((c) => c.sessionName === paneInfo.sessionName)?.pid ?? 0) : pid;
+      const { app, appName } = findTerminalInTree(hostPid, processTree);
+      if (app !== "unknown") {
+        newPidTerminalApp.set(pid, { app, appName });
+      }
     }
     orphanedPids = newOrphaned;
     pidTmuxSession = newPidTmuxSession;
+    pidTerminalApp = newPidTerminalApp;
   }
 
   // Collect transcript paths claimed by hook events so fallback doesn't reuse them
@@ -226,6 +238,7 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
           claimedPaths,
           orphanedPids.has(info.pid),
           pidTmuxSession.get(info.pid) ?? null,
+          pidTerminalApp.get(info.pid) ?? null,
         ),
       ),
   );

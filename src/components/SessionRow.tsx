@@ -2,6 +2,7 @@
 
 import { ClaudeSession, PrStatus, SessionStatus, statusLabels } from "@/lib/types";
 import { PrStatusBadge } from "./PrStatusBadge";
+import { TerminalBadge } from "./StatusBadge";
 
 const statusColors: Record<SessionStatus, { dot: string; text: string }> = {
   working: { dot: "bg-emerald-500", text: "text-emerald-400" },
@@ -83,6 +84,7 @@ export function SessionRow({
             wt
           </span>
         )}
+        <TerminalBadge session={session} />
       </div>
 
       {/* Branch */}

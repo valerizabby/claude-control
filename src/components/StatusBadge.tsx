@@ -1,4 +1,4 @@
-import { SessionStatus, statusLabels } from "@/lib/types";
+import { ClaudeSession, SessionStatus, statusLabels } from "@/lib/types";
 
 const statusConfig: Record<SessionStatus, { dotColor: string; textColor: string; bgColor: string; pulse: boolean }> = {
   working: { dotColor: "bg-emerald-400", textColor: "text-emerald-300", bgColor: "bg-emerald-500/10", pulse: true },
@@ -41,5 +41,16 @@ export function StatusBadge({
         {label}
       </span>
     </div>
+  );
+}
+
+// Where the session runs: "GoLand", "Terminal", "GoLand · tmux: api"
+export function TerminalBadge({ session }: { session: Pick<ClaudeSession, "terminalApp" | "tmuxSession"> }) {
+  const parts = [session.terminalApp?.appName, session.tmuxSession && `tmux: ${session.tmuxSession}`].filter(Boolean);
+  if (parts.length === 0) return null;
+  return (
+    <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded-sm bg-white/4 border border-white/6 text-zinc-400 font-(family-name:--font-geist-mono) truncate max-w-[180px]">
+      {parts.join(" · ")}
+    </span>
   );
 }
