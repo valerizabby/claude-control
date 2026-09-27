@@ -8,6 +8,10 @@ export type TerminalApp =
   | "alacritty"
   | "warp"
   | "cmux"
+  | "vscode"
+  | "cursor"
+  | "windsurf"
+  | "jetbrains"
   | "unknown";
 
 export type TerminalOpenIn = "tab" | "window";
@@ -29,6 +33,7 @@ export interface TerminalInfo {
     clientTty: string; // TTY of the tmux client (terminal tab's TTY, NOT pane TTY)
   };
   tty: string; // The claude process's TTY (or "" on failure)
+  cwd?: string; // Session working directory — lets IDE adapters raise the matching project window
 }
 
 export interface TmuxPaneInfo {

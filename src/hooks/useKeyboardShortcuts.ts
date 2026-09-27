@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { sendKeystrokeAction } from "@/lib/actions";
+import { errorMessage, postAction, sendKeystrokeAction } from "@/lib/actions";
 import { flattenGroupedSessions } from "@/lib/group-sessions";
 import { ClaudeSession, ViewMode } from "@/lib/types";
 import { useSettings } from "./useSettings";
@@ -49,38 +49,42 @@ export function useKeyboardShortcuts({
 
   const selectedSession = selectedIndex !== null ? (orderedSessions[selectedIndex] ?? null) : null;
 
-  const flash = useCallback((label: string, color: string = "blue") => {
+  const flash = useCallback((label: string, color: string = "blue", durationMs: number = 1200) => {
     setActionFeedback({ label, color });
-    setTimeout(() => setActionFeedback(null), 1200);
+    setTimeout(() => setActionFeedback(null), durationMs);
   }, []);
+
+  // Errors stay up longer than the 1.2s action flash so the hint is readable
+  const flashError = useCallback((err: unknown) => flash(errorMessage(err), "red", 4000), [flash]);
 
   const openAction = useCallback(
     async (action: string, session: ClaudeSession) => {
       try {
-        await fetch("/api/actions/open", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action,
-            path: session.workingDirectory,
-            pid: session.pid,
-            targetScreen: targetScreen ?? undefined,
-          }),
+        await postAction({
+          action,
+          path: session.workingDirectory,
+          pid: session.pid,
+          targetScreen: targetScreen ?? undefined,
         });
       } catch (err) {
         console.error("Action failed:", err);
+        flashError(err);
       }
     },
-    [targetScreen],
+    [targetScreen, flashError],
   );
 
-  const sendKeystroke = useCallback(async (pid: number, keystroke: string) => {
-    try {
-      await sendKeystrokeAction(pid, keystroke);
-    } catch (err) {
-      console.error("Keystroke failed:", err);
-    }
-  }, []);
+  const sendKeystroke = useCallback(
+    async (pid: number, keystroke: string) => {
+      try {
+        await sendKeystrokeAction(pid, keystroke);
+      } catch (err) {
+        console.error("Keystroke failed:", err);
+        flashError(err);
+      }
+    },
+    [flashError],
+  );
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {

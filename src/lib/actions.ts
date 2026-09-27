@@ -9,13 +9,25 @@ export function refreshAfterAction() {
   }
 }
 
-/** Send a keystroke to a Claude session via the API, then refresh. */
-export async function sendKeystrokeAction(pid: number, keystroke: string) {
+/** POST to /api/actions/open. Throws with the server's error message (e.g. unsupported terminal) on failure. */
+export async function postAction(body: Record<string, unknown>) {
   const response = await fetch("/api/actions/open", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "send-keystroke", pid, keystroke }),
+    body: JSON.stringify(body),
   });
-  if (!response.ok) throw new Error(`Keystroke failed: ${response.status}`);
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.error ?? `Action failed: ${response.status}`);
+  }
+}
+
+export function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/** Send a keystroke to a Claude session via the API, then refresh. */
+export async function sendKeystrokeAction(pid: number, keystroke: string) {
+  await postAction({ action: "send-keystroke", pid, keystroke });
   refreshAfterAction();
 }

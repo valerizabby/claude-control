@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { refreshAfterAction, sendKeystrokeAction } from "@/lib/actions";
+import { errorMessage, postAction, refreshAfterAction, sendKeystrokeAction } from "@/lib/actions";
 import type { ToolInfo } from "@/lib/types";
 
 export function QuickReply({
@@ -23,6 +23,7 @@ export function QuickReply({
   const [showReply, setShowReply] = useState(false);
   const [toolExpanded, setToolExpanded] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const stopProp = (e: React.MouseEvent | React.FocusEvent) => {
@@ -32,11 +33,15 @@ export function QuickReply({
 
   const sendKeystroke = async (keystroke: string, label: string) => {
     setSending(label);
+    setError(null);
     onActed?.(label === "approve" ? "approve" : "reject");
     try {
       await sendKeystrokeAction(pid, keystroke);
     } catch (err) {
       console.error("Failed to send keystroke:", err);
+      setError(errorMessage(err));
+      setSending(null);
+      return;
     }
     setTimeout(() => setSending(null), 1500);
   };
@@ -45,18 +50,18 @@ export function QuickReply({
     const text = message.trim();
     if (!text) return;
     setSending("reply");
+    setError(null);
     try {
-      await fetch("/api/actions/open", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send-message", path, pid, message: text }),
-      });
+      await postAction({ action: "send-message", path, pid, message: text });
       setMessage("");
       setShowReply(false);
       onActed?.("reply");
       refreshAfterAction();
     } catch (err) {
       console.error("Failed to send:", err);
+      setError(errorMessage(err));
+      setSending(null);
+      return;
     }
     setTimeout(() => setSending(null), 1500);
   };
@@ -243,6 +248,8 @@ export function QuickReply({
           </button>
         </div>
       )}
+
+      {error && <p className="mt-1.5 text-[11px] text-red-400/80 leading-relaxed">{error}</p>}
     </div>
   );
 }

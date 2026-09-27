@@ -13,6 +13,7 @@ interface CreateRequest {
   baseBranch?: string;
   prompt?: string;
   tmuxSession?: string;
+  useTmux?: boolean; // Per-session override of config.terminalUseTmux
 }
 
 async function createWorktree(repoPath: string, branchName: string, baseBranch?: string): Promise<string> {
@@ -55,15 +56,17 @@ async function openTerminalWithClaude(
   repoPath: string,
   prompt?: string,
   tmuxSessionOverride?: string,
+  useTmuxOverride?: boolean,
 ): Promise<void> {
   const config = await loadConfig();
+  const useTmux = useTmuxOverride ?? config.terminalUseTmux;
 
   // Determine tmux session name:
   // - explicit override from UI (choose mode) takes priority
   // - "per-project" mode uses the project name
   // - otherwise no named session
   let tmuxSession: string | undefined;
-  if (config.terminalUseTmux) {
+  if (useTmux) {
     if (tmuxSessionOverride) {
       tmuxSession = tmuxSessionOverride;
     } else if (config.terminalTmuxMode === "per-project") {
@@ -74,7 +77,7 @@ async function openTerminalWithClaude(
   await createSession({
     terminalApp: config.terminalApp,
     openIn: config.terminalOpenIn,
-    useTmux: config.terminalUseTmux,
+    useTmux,
     tmuxSession,
     cwd,
     prompt,
@@ -85,7 +88,7 @@ async function openTerminalWithClaude(
 export async function POST(request: Request) {
   try {
     const body: CreateRequest = await request.json();
-    const { repoPath, branchName, baseBranch, prompt, tmuxSession } = body;
+    const { repoPath, branchName, baseBranch, prompt, tmuxSession, useTmux } = body;
 
     if (!repoPath) {
       return NextResponse.json({ error: "Missing repoPath" }, { status: 400 });
@@ -119,7 +122,13 @@ export async function POST(request: Request) {
     }
 
     // Open terminal with claude in the target directory
-    await openTerminalWithClaude(targetPath, repoPath, prompt, tmuxSession);
+    await openTerminalWithClaude(
+      targetPath,
+      repoPath,
+      prompt,
+      tmuxSession,
+      typeof useTmux === "boolean" ? useTmux : undefined,
+    );
 
     return NextResponse.json({ ok: true, path: targetPath });
   } catch (error: unknown) {
