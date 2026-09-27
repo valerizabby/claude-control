@@ -265,6 +265,7 @@ export function NewSessionModal({ repoPath, repoName, onClose }: Props) {
           baseBranch: branchName.trim() ? baseBranch.trim() || undefined : undefined,
           prompt: (prompt ?? "").trim() || undefined,
           tmuxSession: selectedTmuxSession || undefined,
+          useTmux: terminalConfig?.terminalUseTmux,
         }),
       });
 
@@ -508,6 +509,20 @@ export function NewSessionModal({ repoPath, repoName, onClose }: Props) {
                 className="w-full px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-hidden focus:border-zinc-600 transition-colors resize-y min-h-32"
               />
             </div>
+          )}
+
+          {/* Per-session tmux override — defaults to the Settings value */}
+          {!needsSetup && terminalConfig && (
+            <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={terminalConfig.terminalUseTmux}
+                onChange={(e) => setTerminalConfig({ ...terminalConfig, terminalUseTmux: e.target.checked })}
+                className="accent-blue-500"
+              />
+              Run in tmux
+              <span className="text-zinc-600">— enables approve/reply without focusing the terminal</span>
+            </label>
           )}
 
           {/* Tmux session picker (shown when tmux enabled + "choose" mode) */}

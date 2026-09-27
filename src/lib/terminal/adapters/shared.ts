@@ -4,6 +4,14 @@ import { promisify } from "util";
 export const execFileAsync = promisify(execFile);
 export const OSASCRIPT_TIMEOUT_MS = 10000;
 
+/** Thrown when a session's terminal can't receive input or focus (e.g. IDE terminal without tmux). */
+export class UnsupportedTerminalError extends Error {
+  constructor(public readonly terminal: string) {
+    super(`${terminal} terminal can't receive input from Claude Control. Run the session in tmux to enable sending.`);
+    this.name = "UnsupportedTerminalError";
+  }
+}
+
 export function escapeForAppleScript(text: string): string {
   return text
     .replace(/\\/g, "\\\\")

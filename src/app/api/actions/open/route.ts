@@ -11,6 +11,7 @@ import {
   focusSession,
   sendKeystroke,
   sendText,
+  UnsupportedTerminalError,
 } from "@/lib/terminal";
 import { escapeForAppleScript } from "@/lib/terminal/adapters/shared";
 
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
         }
         const [tree, panes] = await Promise.all([buildProcessTree(), detectAllTmuxPanes()]);
         const info = await detectTerminal(pid, tree, panes);
-        await focusSession(info);
+        await focusSession({ ...info, cwd: path });
         break;
       }
       case "editor": {
@@ -214,6 +215,9 @@ end tell`;
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof UnsupportedTerminalError) {
+      return NextResponse.json({ error: error.message, code: "unsupported-terminal" }, { status: 422 });
+    }
     console.error("Action failed:", error);
     return NextResponse.json({ error: "Action failed" }, { status: 500 });
   }

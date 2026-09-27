@@ -6,6 +6,7 @@ export {
   listTmuxSessions,
   sendKeystroke,
   sendText,
+  UnsupportedTerminalError,
 } from "./adapters";
 export {
   buildProcessTree,

@@ -20,6 +20,10 @@ describe("adapter registry", () => {
       "alacritty",
       "warp",
       "cmux",
+      "vscode",
+      "cursor",
+      "windsurf",
+      "jetbrains",
     ];
 
     for (const app of knownApps) {
@@ -625,5 +629,113 @@ describe("public API tmux handling", () => {
       expect.any(Object),
       expect.any(Function),
     );
+  });
+});
+
+// ── Unsupported terminals / IDE adapter ─────────────────────────────────────
+
+describe("unsupported terminals and IDE adapter", () => {
+  const tmux = {
+    paneId: "%5",
+    sessionName: "main",
+    windowIndex: 1,
+    paneIndex: 0,
+    target: "main:1.0",
+    clientPid: 500,
+    clientTty: "/dev/ttys003",
+  };
+  const goland = { app: "jetbrains" as const, appName: "GoLand", processName: "goland", pid: 1, tty: "/dev/ttys005" };
+  const unknown = { app: "unknown" as const, appName: "Unknown", processName: "unknown", pid: 1, tty: "/dev/ttys005" };
+
+  function mockExec() {
+    const execMock = vi.fn().mockImplementation((...args: unknown[]) => {
+      const cb = args[args.length - 1] as (err: null, result: { stdout: string; stderr: string }) => void;
+      cb(null, { stdout: "", stderr: "" });
+    });
+    vi.doMock("child_process", () => ({ execFile: execMock }));
+    return execMock;
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it("sendText / sendKeystroke / focusSession throw UnsupportedTerminalError for an unknown terminal", async () => {
+    const execMock = mockExec();
+    const { sendText, sendKeystroke, focusSession, UnsupportedTerminalError } = await import("./adapters");
+
+    await expect(sendText({ ...unknown, inTmux: false }, "hi")).rejects.toBeInstanceOf(UnsupportedTerminalError);
+    await expect(sendKeystroke({ ...unknown, inTmux: false }, "return")).rejects.toBeInstanceOf(
+      UnsupportedTerminalError,
+    );
+    await expect(focusSession({ ...unknown, inTmux: false })).rejects.toBeInstanceOf(UnsupportedTerminalError);
+    expect(execMock).not.toHaveBeenCalled();
+  });
+
+  it("focusSession in tmux with an unknown terminal selects the pane without throwing", async () => {
+    const execMock = mockExec();
+    const { focusSession } = await import("./adapters");
+
+    await focusSession({ ...unknown, inTmux: true, tmux });
+
+    expect(execMock).toHaveBeenCalledWith(
+      expect.stringContaining("tmux"),
+      ["select-pane", "-t", "%5"],
+      expect.any(Object),
+      expect.any(Function),
+    );
+  });
+
+  it("IDE terminal without tmux refuses input with the IDE name, never via System Events", async () => {
+    const execMock = mockExec();
+    const { sendText, sendKeystroke, UnsupportedTerminalError } = await import("./adapters");
+
+    const err = await sendText({ ...goland, inTmux: false }, "/create-pr").catch((e) => e);
+    expect(err).toBeInstanceOf(UnsupportedTerminalError);
+    expect(err.message).toContain("GoLand");
+    expect(err.message).toContain("tmux");
+    await expect(sendKeystroke({ ...goland, inTmux: false }, "return")).rejects.toBeInstanceOf(
+      UnsupportedTerminalError,
+    );
+    expect(execMock).not.toHaveBeenCalled();
+  });
+
+  it("IDE terminal in tmux sends via send-keys", async () => {
+    const execMock = mockExec();
+    const { sendText } = await import("./adapters");
+
+    await sendText({ ...goland, inTmux: true, tmux }, "/create-pr");
+
+    expect(execMock).toHaveBeenCalledWith(
+      expect.stringContaining("tmux"),
+      ["send-keys", "-t", "%5", "/create-pr", "Enter"],
+      expect.any(Object),
+      expect.any(Function),
+    );
+  });
+
+  it("IDE focus activates the app and raises the window matching the cwd folder", async () => {
+    const execMock = mockExec();
+    const { focusSession } = await import("./adapters");
+
+    await focusSession({ ...goland, inTmux: false, cwd: "/Users/me/code/claude-control" });
+
+    expect(execMock).toHaveBeenCalledWith("open", ["-a", "GoLand"], expect.any(Object), expect.any(Function));
+    const call = execMock.mock.calls.find((c) => c[0] === "osascript");
+    const script = (call![1] as string[])[1];
+    expect(script).toContain('id of application "GoLand"');
+    expect(script).toContain('contains "claude-control"');
+    expect(script).toContain("AXRaise");
+  });
+
+  it("IDE focus in tmux selects the pane and brings the IDE to front", async () => {
+    const execMock = mockExec();
+    const { focusSession } = await import("./adapters");
+
+    await focusSession({ ...goland, inTmux: true, tmux });
+
+    const bins = execMock.mock.calls.map((c) => [c[0], (c[1] as string[])[0]]);
+    expect(bins).toContainEqual([expect.stringContaining("tmux"), "select-pane"]);
+    expect(execMock).toHaveBeenCalledWith("open", ["-a", "GoLand"], expect.any(Object), expect.any(Function));
   });
 });

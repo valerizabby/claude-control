@@ -2,7 +2,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { PROCESS_TIMEOUT_MS } from "../constants";
 import { getAdapter } from "./adapters/registry";
-import { shellEscape, shellEscapeDouble } from "./adapters/shared";
+import { shellEscape, shellEscapeDouble, UnsupportedTerminalError } from "./adapters/shared";
 import { buildProcessTree, detectTmuxClients, findTerminalInTree } from "./detect";
 import { getTmuxBin } from "./tmux-bin";
 import type { TerminalApp, TerminalInfo } from "./types";
@@ -10,6 +10,7 @@ import type { TerminalApp, TerminalInfo } from "./types";
 const execFileAsync = promisify(execFile);
 
 export { getAdapter, registerAdapter } from "./adapters/registry";
+export { UnsupportedTerminalError } from "./adapters/shared";
 export type { CreateSessionOpts, TerminalAdapter } from "./adapters/types";
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -28,7 +29,10 @@ export async function focusSession(info: TerminalInfo): Promise<void> {
   const effectiveInfo = info.inTmux && info.tmux?.clientTty ? { ...info, tty: info.tmux.clientTty } : info;
 
   const adapter = getAdapter(effectiveInfo.app);
-  if (!adapter) return; // Unknown terminal — nothing to focus
+  if (!adapter) {
+    if (info.inTmux) return; // Pane is selected; the hosting terminal is unknown
+    throw new UnsupportedTerminalError(info.appName);
+  }
   await adapter.focus(effectiveInfo);
 }
 
@@ -55,7 +59,7 @@ export async function sendText(info: TerminalInfo, text: string): Promise<void> 
   }
 
   const adapter = getAdapter(info.app);
-  if (!adapter) return;
+  if (!adapter) throw new UnsupportedTerminalError(info.appName);
   await adapter.sendText(info, text);
 }
 
@@ -77,7 +81,7 @@ export async function sendKeystroke(info: TerminalInfo, keystroke: string): Prom
   }
 
   const adapter = getAdapter(info.app);
-  if (!adapter) return;
+  if (!adapter) throw new UnsupportedTerminalError(info.appName);
   await adapter.sendKeystroke(info, keystroke);
 }
 

@@ -2,6 +2,7 @@ import type { TerminalApp } from "../types";
 import { alacrittyAdapter } from "./alacritty";
 import { cmuxAdapter } from "./cmux";
 import { ghosttyAdapter } from "./ghostty";
+import { ideAdapter } from "./ide";
 import { itermAdapter } from "./iterm";
 import { kittyAdapter } from "./kitty";
 import { terminalAppAdapter } from "./terminal-app";
@@ -18,6 +19,10 @@ const adapters: Partial<Record<TerminalApp, TerminalAdapter>> = {
   alacritty: alacrittyAdapter,
   warp: warpAdapter,
   cmux: cmuxAdapter,
+  vscode: ideAdapter,
+  cursor: ideAdapter,
+  windsurf: ideAdapter,
+  jetbrains: ideAdapter,
 };
 
 export function getAdapter(app: TerminalApp): TerminalAdapter | null {

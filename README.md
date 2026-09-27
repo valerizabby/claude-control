@@ -190,6 +190,24 @@ These terminals are detected and can be activated, but focus goes to the app —
 
 > **Tip:** For any terminal with basic support, enabling **tmux integration** gives you full per-session control. Claude-control sends commands directly to tmux panes via `send-keys`, bypassing the terminal entirely.
 
+### IDE terminals (VS Code, Cursor, Windsurf, JetBrains)
+
+Sessions started in an IDE's built-in terminal are detected, and **Focus** brings the IDE window for the session's project to the front. It doesn't pick the terminal tab. The IDE gives no way to type into its terminal panel, and simulated keystrokes could end up in the editor instead. So without tmux, **Create PR**, **Quick Reply** and **approve/reject** show an error rather than sending.
+
+To make every button work, run Claude inside tmux in the IDE terminal:
+
+```bash
+tmux new -A -s "$(basename "$PWD" | tr .: __)" claude
+```
+
+Or add a shell function to `~/.zshrc` (named `ccl` so it doesn't shadow the `cc` compiler):
+
+```bash
+ccl() { tmux new -A -s "$(basename "$PWD" | tr .: __)" claude "$@"; }
+```
+
+`-A` reattaches when a session for this folder already exists. In tmux, input goes to the pane through `send-keys`, and **Focus** selects the pane and raises the IDE window. For sessions created from the dashboard, turn on **Run in tmux** in Settings, or per session in the New Session dialog.
+
 ## First-time setup
 
 On first launch, the app will ask you to select your code directory (the parent folder containing your git repos, e.g. `~/Code`). This is stored in `~/.claude-control/config.json` and used for the repo picker when creating new sessions.

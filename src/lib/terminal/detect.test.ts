@@ -68,6 +68,49 @@ describe("matchTerminal", () => {
   });
 });
 
+describe("matchTerminal — IDE terminals", () => {
+  it("matches the VS Code Electron helper by bundle path", () => {
+    expect(
+      matchTerminal(
+        "/Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper",
+      ),
+    ).toEqual({ app: "vscode", appName: "Visual Studio Code", processName: "Code Helper" });
+  });
+
+  it("matches Cursor and Windsurf helpers", () => {
+    expect(
+      matchTerminal(
+        "/Applications/Cursor.app/Contents/Frameworks/Cursor Helper (Plugin).app/Contents/MacOS/Cursor Helper (Plugin)",
+      )?.app,
+    ).toBe("cursor");
+    expect(matchTerminal("/Applications/Windsurf.app/Contents/MacOS/Electron")?.app).toBe("windsurf");
+  });
+
+  it("matches JetBrains IDEs and uses the bundle name as appName", () => {
+    expect(matchTerminal("/Applications/GoLand.app/Contents/MacOS/goland")).toEqual({
+      app: "jetbrains",
+      appName: "GoLand",
+      processName: "goland",
+    });
+    expect(matchTerminal("/Applications/IntelliJ IDEA.app/Contents/MacOS/idea")?.appName).toBe("IntelliJ IDEA");
+    expect(matchTerminal("/Users/me/Applications/PyCharm Professional Edition.app/Contents/MacOS/pycharm")).toEqual({
+      app: "jetbrains",
+      appName: "PyCharm Professional Edition",
+      processName: "pycharm",
+    });
+  });
+
+  it("does not match unrelated bundles or bare short names", () => {
+    expect(
+      matchTerminal(
+        "/System/Library/PrivateFrameworks/TextInputUIMacHelper.framework/Versions/A/XPCServices/CursorUIViewService.xpc/Contents/MacOS/CursorUIViewService",
+      ),
+    ).toBeNull();
+    expect(matchTerminal("/Applications/Xcode.app/Contents/MacOS/Xcode")).toBeNull();
+    expect(matchTerminal("provider")).toBeNull();
+  });
+});
+
 describe("findTerminalInTree", () => {
   it("walks up to find iTerm2", () => {
     const tree = new Map<number, ProcessTreeEntry>([
@@ -181,6 +224,16 @@ describe("isOrphaned", () => {
       [300, { ppid: 1, cpuPercent: 1, comm: "iTerm2" }],
     ]);
     expect(isOrphaned(100, tree, false)).toBe(false);
+  });
+
+  it("returns false for a session in a JetBrains IDE terminal", () => {
+    const tree = new Map<number, ProcessTreeEntry>([
+      [100, { ppid: 200, cpuPercent: 5, comm: "claude" }],
+      [200, { ppid: 300, cpuPercent: 0, comm: "/bin/zsh" }],
+      [300, { ppid: 1, cpuPercent: 1, comm: "/Applications/GoLand.app/Contents/MacOS/goland" }],
+    ]);
+    expect(isOrphaned(100, tree, false)).toBe(false);
+    expect(findTerminalInTree(100, tree).app).toBe("jetbrains");
   });
 
   it("returns true when no known terminal is in the ancestor chain", () => {

@@ -19,6 +19,22 @@ const KNOWN_TERMINALS: Record<string, { app: TerminalApp; appName: string; proce
   cmux: { app: "cmux", appName: "Cmux", processName: "cmux" },
 };
 
+// IDE integrated terminals, matched by the first .app bundle in the process path — short
+// executable names ("idea", "rider", "Code Helper") would collide with the fuzzy match below.
+// VS Code-family shells run under an Electron helper (".../Cursor.app/.../Cursor Helper.app/..."),
+// JetBrains shells run directly under the IDE (".../GoLand.app/Contents/MacOS/goland").
+const KNOWN_IDES: { bundle: RegExp; app: TerminalApp; appName: string }[] = [
+  { bundle: /^Visual Studio Code/, app: "vscode", appName: "Visual Studio Code" },
+  { bundle: /^Cursor$/, app: "cursor", appName: "Cursor" },
+  { bundle: /^Windsurf/, app: "windsurf", appName: "Windsurf" },
+  {
+    bundle:
+      /^(IntelliJ IDEA|PyCharm|WebStorm|GoLand|CLion|Rider|RubyMine|PhpStorm|DataGrip|DataSpell|RustRover|Android Studio)/,
+    app: "jetbrains",
+    appName: "JetBrains IDE",
+  },
+];
+
 const UNKNOWN_TERMINAL: Pick<TerminalInfo, "app" | "appName" | "processName"> = {
   app: "unknown",
   appName: "Unknown",
@@ -214,6 +230,11 @@ export function matchTerminal(comm: string): Pick<TerminalInfo, "app" | "appName
   const direct = KNOWN_TERMINALS[lower];
   if (direct) return direct;
 
+  // IDE terminal — appName is the bundle name itself ("GoLand", "IntelliJ IDEA CE") so `open -a` works
+  const bundle = comm.match(/([^/]+)\.app\//)?.[1];
+  const ide = bundle ? KNOWN_IDES.find((i) => i.bundle.test(bundle)) : undefined;
+  if (ide && bundle) return { app: ide.app, appName: bundle, processName: basename };
+
   // Fuzzy match for versioned/server processes (e.g. "iTermServer-3.5.14" → iterm)
   for (const [key, value] of Object.entries(KNOWN_TERMINALS)) {
     if (lower.startsWith(key) || lower.includes(key)) return value;
@@ -338,7 +359,7 @@ export function isOrphaned(
  * Return the display name for a TerminalApp value.
  */
 export function getTerminalAppName(app: TerminalApp): string {
-  for (const entry of Object.values(KNOWN_TERMINALS)) {
+  for (const entry of [...Object.values(KNOWN_TERMINALS), ...KNOWN_IDES]) {
     if (entry.app === app) return entry.appName;
   }
   return app;
