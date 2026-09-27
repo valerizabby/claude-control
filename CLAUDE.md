@@ -10,4 +10,6 @@ in English. Local, untracked notes (e.g. `_worklog/`) may be in any language.
 
 Every user-facing change adds an entry to `CHANGELOG.md` under `## [Unreleased]`
 (Added / Changed / Fixed / Removed), in the same PR as the change. On a version bump,
-rename `[Unreleased]` to the new version with the date and start a fresh `[Unreleased]`.
+rename `[Unreleased]` to `## [x.y.z] - YYYY-MM-DD` (matching `package.json`) and start a fresh
+`[Unreleased]`. The release workflow copies that section into the GitHub release body, so a
+missing or misnamed heading means a release without notes.
