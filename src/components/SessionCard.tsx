@@ -8,7 +8,7 @@ import { OutputPreview } from "./OutputPreview";
 import { PrStatusBadge } from "./PrStatusBadge";
 import { QuickActions } from "./QuickActions";
 import { QuickReply } from "./QuickReply";
-import { StatusBadge } from "./StatusBadge";
+import { StatusBadge, TerminalBadge } from "./StatusBadge";
 import { TaskSummaryView } from "./TaskSummaryView";
 
 function timeAgo(iso: string): string {
@@ -211,7 +211,10 @@ export function SessionCard({
                 {session.workingDirectory.replace(/.*\/([^/]+\/[^/]+)$/, "$1")}
               </p>
             </div>
-            <StatusBadge status={displayStatus} orphaned={session.orphaned} stale={isStale} />
+            <div className="shrink-0 flex items-center gap-1.5">
+              <TerminalBadge session={session} />
+              <StatusBadge status={displayStatus} orphaned={session.orphaned} stale={isStale} />
+            </div>
           </div>
 
           {/* Git info + PR status */}

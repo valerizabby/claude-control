@@ -28,6 +28,7 @@ function makeSession(overrides: Partial<ClaudeSession> = {}): ClaudeSession {
     prUrl: null,
     orphaned: false,
     tmuxSession: null,
+    terminalApp: null,
     ...overrides,
   };
 }

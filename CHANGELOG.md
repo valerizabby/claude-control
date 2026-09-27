@@ -9,6 +9,8 @@ All notable user-facing changes are recorded here. Format follows
 
 - Sessions running in IDE integrated terminals (VS Code, Cursor, Windsurf, JetBrains IDEs) are
   detected. **Focus** brings the IDE to the front and raises the window of the session's project.
+- Session cards and list rows show where the session runs (e.g. `GoLand`, `Terminal`,
+  `GoLand · tmux: api`).
 - **Run in tmux** checkbox in the New Session dialog to override the Settings value per session.
 
 ### Changed

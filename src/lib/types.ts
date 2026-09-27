@@ -1,3 +1,5 @@
+import type { TerminalApp } from "./terminal/types";
+
 export type ViewMode = "grid" | "list";
 
 export type SessionStatus = "working" | "idle" | "waiting" | "errored" | "finished";
@@ -29,6 +31,8 @@ export interface ClaudeSession {
   prUrl: string | null;
   orphaned: boolean;
   tmuxSession: string | null;
+  // App hosting the session (terminal or IDE); null when it couldn't be detected
+  terminalApp: { app: TerminalApp; appName: string } | null;
 }
 
 export interface GitSummary {
