@@ -33,6 +33,8 @@ export interface ClaudeSession {
   tmuxSession: string | null;
   // App hosting the session (terminal or IDE); null when it couldn't be detected
   terminalApp: { app: TerminalApp; appName: string } | null;
+  // Why the dashboard can't type into this session (tooltip text); null when it can
+  sendUnsupportedReason: string | null;
 }
 
 export interface GitSummary {

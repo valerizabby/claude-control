@@ -739,3 +739,15 @@ describe("unsupported terminals and IDE adapter", () => {
     expect(execMock).toHaveBeenCalledWith("open", ["-a", "GoLand"], expect.any(Object), expect.any(Function));
   });
 });
+
+describe("sendUnsupportedReason", () => {
+  it("allows real terminals and anything in tmux, refuses IDEs and unknown hosts", async () => {
+    const { sendUnsupportedReason } = await import("./adapters");
+
+    expect(sendUnsupportedReason({ app: "iterm", appName: "iTerm2" }, false)).toBeNull();
+    expect(sendUnsupportedReason({ app: "jetbrains", appName: "GoLand" }, true)).toBeNull();
+    expect(sendUnsupportedReason(null, true)).toBeNull();
+    expect(sendUnsupportedReason({ app: "jetbrains", appName: "GoLand" }, false)).toMatch(/^GoLand: .*tmux/);
+    expect(sendUnsupportedReason(null, false)).toMatch(/^Unknown terminal: .*tmux/);
+  });
+});

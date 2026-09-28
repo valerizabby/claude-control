@@ -10,6 +10,7 @@ export function QuickReply({
   lastAssistantText,
   lastTools,
   hasPendingToolUse,
+  sendUnsupportedReason,
   onActed,
 }: {
   pid: number;
@@ -17,6 +18,7 @@ export function QuickReply({
   lastAssistantText: string | null;
   lastTools: ToolInfo[];
   hasPendingToolUse: boolean;
+  sendUnsupportedReason?: string | null;
   onActed?: (action: "approve" | "reject" | "reply") => void;
 }) {
   const [sending, setSending] = useState<string | null>(null);
@@ -67,6 +69,11 @@ export function QuickReply({
   };
 
   const isPermissionPrompt = hasPendingToolUse;
+  const blocked = !!sendUnsupportedReason;
+  // Disabled controls pass hover through, so the row shows the reason tooltip
+  const rowProps = blocked
+    ? { className: "has-tooltip cursor-not-allowed flex items-center gap-1.5", "data-tip": sendUnsupportedReason }
+    : { className: "flex items-center gap-1.5" };
 
   return (
     <div onClick={stopProp} onMouseDown={stopProp} className="mt-3 cleanup-slide-in">
@@ -115,18 +122,18 @@ export function QuickReply({
 
       {isPermissionPrompt ? (
         /* Permission prompt: Approve / Reject buttons */
-        <div className="flex items-center gap-1.5">
+        <div {...rowProps}>
           <button
             onClick={(e) => {
               stopProp(e);
               sendKeystroke("return", "approve");
             }}
-            disabled={sending !== null}
+            disabled={blocked || sending !== null}
             className={`flex-1 h-8 flex items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors ${
               sending === "approve"
                 ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400"
                 : "bg-emerald-600/80 hover:bg-emerald-500 text-white border border-emerald-500/30"
-            } disabled:opacity-60`}
+            } disabled:opacity-60 disabled:pointer-events-none`}
           >
             {sending === "approve" ? (
               "Sent!"
@@ -144,12 +151,12 @@ export function QuickReply({
               stopProp(e);
               sendKeystroke("escape", "reject");
             }}
-            disabled={sending !== null}
+            disabled={blocked || sending !== null}
             className={`h-8 px-3 flex items-center justify-center gap-1.5 rounded-lg text-xs transition-colors ${
               sending === "reject"
                 ? "bg-red-500/15 border border-red-500/25 text-red-400"
                 : "bg-white/4 hover:bg-red-500/12 border border-white/7 hover:border-red-500/25 text-zinc-500 hover:text-red-400"
-            } disabled:opacity-60`}
+            } disabled:opacity-60 disabled:pointer-events-none`}
           >
             {sending === "reject" ? "Sent!" : "Reject"}
           </button>
@@ -159,7 +166,8 @@ export function QuickReply({
               setShowReply(!showReply);
               if (!showReply) setTimeout(() => inputRef.current?.focus(), 100);
             }}
-            className="has-tooltip h-8 w-8 flex items-center justify-center rounded-lg bg-white/4 hover:bg-white/8 border border-white/7 text-zinc-500 hover:text-zinc-300 transition-colors"
+            disabled={blocked}
+            className={`${blocked ? "" : "has-tooltip"} h-8 w-8 flex items-center justify-center rounded-lg bg-white/4 hover:bg-white/8 border border-white/7 text-zinc-500 hover:text-zinc-300 transition-colors disabled:opacity-60 disabled:pointer-events-none`}
             data-tip="Reply"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -173,7 +181,7 @@ export function QuickReply({
         </div>
       ) : (
         /* Conversational question: text reply by default */
-        <div className="flex items-center gap-1.5">
+        <div {...rowProps}>
           <input
             ref={inputRef}
             type="text"
@@ -188,16 +196,16 @@ export function QuickReply({
             onClick={stopProp}
             onFocus={stopProp}
             placeholder={sending === "reply" ? "Sent!" : "Reply to Claude..."}
-            disabled={sending !== null}
-            className="flex-1 h-8 px-3 rounded-lg text-xs bg-white/6 border border-white/10 focus:border-blue-500/40 focus:bg-white/8 text-zinc-200 placeholder:text-zinc-600 outline-hidden transition-colors disabled:opacity-50"
+            disabled={blocked || sending !== null}
+            className="flex-1 h-8 px-3 rounded-lg text-xs bg-white/6 border border-white/10 focus:border-blue-500/40 focus:bg-white/8 text-zinc-200 placeholder:text-zinc-600 outline-hidden transition-colors disabled:opacity-50 disabled:pointer-events-none"
           />
           <button
             onClick={(e) => {
               stopProp(e);
               sendMessage();
             }}
-            disabled={!message.trim() || sending !== null}
-            className="shrink-0 h-8 w-8 flex items-center justify-center rounded-lg bg-blue-600/80 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white transition-colors"
+            disabled={blocked || !message.trim() || sending !== null}
+            className="shrink-0 h-8 w-8 flex items-center justify-center rounded-lg bg-blue-600/80 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:pointer-events-none text-white transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path
@@ -235,8 +243,8 @@ export function QuickReply({
               stopProp(e);
               sendMessage();
             }}
-            disabled={!message.trim() || sending !== null}
-            className="shrink-0 h-8 w-8 flex items-center justify-center rounded-lg bg-blue-600/80 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white transition-colors"
+            disabled={blocked || !message.trim() || sending !== null}
+            className="shrink-0 h-8 w-8 flex items-center justify-center rounded-lg bg-blue-600/80 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:pointer-events-none text-white transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path

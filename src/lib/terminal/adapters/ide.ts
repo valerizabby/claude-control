@@ -9,6 +9,8 @@ import type { TerminalAdapter } from "./types";
  * editor — so sending is refused. Sessions running in tmux never reach this adapter for input.
  */
 export const ideAdapter: TerminalAdapter = {
+  inputUnsupported: true,
+
   async focus(info: TerminalInfo): Promise<void> {
     await execFileAsync("open", ["-a", info.appName], { timeout: OSASCRIPT_TIMEOUT_MS });
     if (!info.cwd) return;

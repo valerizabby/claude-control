@@ -22,6 +22,7 @@ import {
   readJsonlTail,
 } from "./session-reader";
 import { classifyStatus } from "./status-classifier";
+import { sendUnsupportedReason } from "./terminal/adapters";
 import {
   buildProcessTree,
   detectAllTmuxPanes,
@@ -165,6 +166,7 @@ async function buildSession(
     orphaned: recentActivity ? false : orphaned,
     tmuxSession,
     terminalApp,
+    sendUnsupportedReason: sendUnsupportedReason(terminalApp, tmuxSession !== null),
   };
 }
 

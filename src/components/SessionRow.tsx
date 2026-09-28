@@ -140,8 +140,9 @@ export function SessionRow({
           )}
           <button
             onClick={() => onApproveReject("approve")}
-            className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-600/80 hover:bg-emerald-500 text-white transition-colors"
-            title="Approve"
+            disabled={!!session.sendUnsupportedReason}
+            className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-600/80 enabled:hover:bg-emerald-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={session.sendUnsupportedReason ?? "Approve"}
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -149,8 +150,9 @@ export function SessionRow({
           </button>
           <button
             onClick={() => onApproveReject("reject")}
-            className="flex items-center justify-center w-6 h-6 rounded-md bg-white/4 hover:bg-red-500/15 border border-white/7 hover:border-red-500/25 text-zinc-500 hover:text-red-400 transition-colors"
-            title="Reject"
+            disabled={!!session.sendUnsupportedReason}
+            className="flex items-center justify-center w-6 h-6 rounded-md bg-white/4 enabled:hover:bg-red-500/15 border border-white/7 enabled:hover:border-red-500/25 text-zinc-500 enabled:hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={session.sendUnsupportedReason ?? "Reject"}
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

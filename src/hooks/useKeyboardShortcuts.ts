@@ -219,6 +219,10 @@ export function useKeyboardShortcuts({
         case "a":
           if (selectedSession.status === "waiting" && selectedSession.pid && selectedSession.hasPendingToolUse) {
             e.preventDefault();
+            if (selectedSession.sendUnsupportedReason) {
+              flash(selectedSession.sendUnsupportedReason, "red", 4000);
+              break;
+            }
             onApproveReject?.(selectedSession.id, "approve");
             sendKeystroke(selectedSession.pid, "return");
             flash("Approved", "emerald");
@@ -227,6 +231,10 @@ export function useKeyboardShortcuts({
         case "x":
           if (selectedSession.status === "waiting" && selectedSession.pid && selectedSession.hasPendingToolUse) {
             e.preventDefault();
+            if (selectedSession.sendUnsupportedReason) {
+              flash(selectedSession.sendUnsupportedReason, "red", 4000);
+              break;
+            }
             onApproveReject?.(selectedSession.id, "reject");
             sendKeystroke(selectedSession.pid, "escape");
             flash("Rejected", "red");

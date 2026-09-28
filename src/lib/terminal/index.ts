@@ -6,6 +6,7 @@ export {
   listTmuxSessions,
   sendKeystroke,
   sendText,
+  sendUnsupportedReason,
   UnsupportedTerminalError,
 } from "./adapters";
 export {
