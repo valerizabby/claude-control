@@ -63,6 +63,17 @@ export async function sendText(info: TerminalInfo, text: string): Promise<void> 
   await adapter.sendText(info, text);
 }
 
+/** Why sendText/sendKeystroke would refuse this session, or null when input can be sent. */
+export function sendUnsupportedReason(
+  host: Pick<TerminalInfo, "app" | "appName"> | null,
+  inTmux: boolean,
+): string | null {
+  if (inTmux) return null; // tmux send-keys works whatever hosts the client
+  const adapter = host ? getAdapter(host.app) : null;
+  if (adapter && !adapter.inputUnsupported) return null;
+  return `${host?.appName ?? "Unknown terminal"}: can't send input — run the session in tmux`;
+}
+
 export async function sendKeystroke(info: TerminalInfo, keystroke: string): Promise<void> {
   // tmux: send directly to the pane
   if (info.inTmux && info.tmux) {

@@ -203,6 +203,14 @@ body {
   opacity: 1;
   transform: translateX(-50%) scale(1);
 }
+/* Anchor to the left edge, for long tips on leftmost buttons */
+.has-tooltip.tip-start::after {
+  left: 0;
+  transform: scale(0.95);
+}
+.has-tooltip.tip-start:hover::after {
+  transform: scale(1);
+}
 
 /* Gradient text */
 .text-gradient {

@@ -25,6 +25,9 @@ export interface TerminalAdapter {
   /** Open a new terminal tab/window and run a command. */
   createSession(command: string, opts: CreateSessionOpts): Promise<void>;
 
+  /** True when sendText/sendKeystroke always refuse (e.g. IDE terminals). */
+  inputUnsupported?: boolean;
+
   /** Close the terminal tab/pane containing this session. Optional — not all terminals support it. */
   closeSession?(info: TerminalInfo): Promise<void>;
 }

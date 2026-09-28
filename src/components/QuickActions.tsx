@@ -11,15 +11,17 @@ function IconButton({
   onClick,
   tip,
   className,
+  disabled,
   children,
 }: {
   onClick: (e: React.MouseEvent) => void;
   tip: string;
   className?: string;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <button onClick={onClick} className={`has-tooltip ${className || iconBtnClass}`} data-tip={tip}>
+    <button onClick={onClick} disabled={disabled} className={`has-tooltip ${className || iconBtnClass}`} data-tip={tip}>
       {children}
     </button>
   );
@@ -43,6 +45,7 @@ export function QuickActions({
   prUrl,
   orphaned,
   tmuxSession,
+  sendUnsupportedReason,
   onCleanup,
 }: {
   path: string;
@@ -52,6 +55,7 @@ export function QuickActions({
   prUrl?: string | null;
   orphaned?: boolean;
   tmuxSession?: string | null;
+  sendUnsupportedReason?: string | null;
   onCleanup?: (e: React.MouseEvent) => void;
 }) {
   const [prSending, setPrSending] = useState(false);
@@ -167,11 +171,14 @@ export function QuickActions({
         ) : showPRButton ? (
           <IconButton
             onClick={sendCreatePR}
-            tip={prSending ? "Sent!" : "Create PR"}
+            disabled={!!sendUnsupportedReason}
+            tip={sendUnsupportedReason || (prSending ? "Sent!" : "Create PR")}
             className={`flex-1 flex items-center justify-center h-8 rounded-lg border transition-all duration-150 ${
-              prSending
-                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                : "bg-white/4 hover:bg-white/10 border-white/7 hover:border-white/15 text-zinc-500 hover:text-zinc-200"
+              sendUnsupportedReason
+                ? "tip-start bg-white/2 border-white/5 text-zinc-700 cursor-not-allowed"
+                : prSending
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                  : "bg-white/4 hover:bg-white/10 border-white/7 hover:border-white/15 text-zinc-500 hover:text-zinc-200"
             }`}
           >
             {prIcon}

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { promisify } from "util";
 import { CHROMIUM_BROWSERS } from "@/lib/close-tabs";
 import { BROWSER_OPTIONS, EDITOR_OPTIONS, GIT_GUI_OPTIONS, loadConfig } from "@/lib/config";
+import { getShellEnv } from "@/lib/shell-env";
 import {
   buildProcessTree,
   detectAllTmuxPanes,
@@ -117,7 +118,12 @@ export async function POST(request: Request) {
         if (!editorDef || !editorDef.command) {
           return NextResponse.json({ error: "No editor configured" }, { status: 400 });
         }
-        await execFileAsync(editorDef.command, [path!]);
+        // Launch the way /api/settings detects it: the app bundle, else the CLI (`code` etc. is often not in PATH)
+        try {
+          await execFileAsync("open", ["-a", editorDef.appName, path!]);
+        } catch {
+          await execFileAsync(editorDef.command, [path!], { env: await getShellEnv() });
+        }
         if (targetScreen !== undefined) {
           await new Promise((r) => setTimeout(r, 800));
           await moveAppToScreen(editorDef.processName, targetScreen);

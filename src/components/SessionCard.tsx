@@ -260,6 +260,7 @@ export function SessionCard({
               lastAssistantText={session.preview.lastAssistantText}
               lastTools={session.preview.lastTools}
               hasPendingToolUse={session.hasPendingToolUse}
+              sendUnsupportedReason={session.sendUnsupportedReason}
               onActed={(action) => {
                 if (action !== "reply") onApproveReject?.(action);
               }}
@@ -307,6 +308,7 @@ export function SessionCard({
               prUrl={session.prUrl}
               orphaned={session.orphaned}
               tmuxSession={session.tmuxSession}
+              sendUnsupportedReason={session.sendUnsupportedReason}
               onCleanup={canCleanup ? handleCleanup : undefined}
             />
           )}
